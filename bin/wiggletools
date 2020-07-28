@@ -30,7 +30,7 @@ def main():
     log10_parser = subparsers.add_parser("to_log10")
     log10_parser.add_argument("--output_prefix", default="LOG10_", help="", type=str)
 
-    combine_parser = subparsers.add_parser("combine")
+    combine_parser = subparsers.add_parser("agg_merge")
     combine_parser.add_argument("--by", choices=["max", "min", "average"], help="", type=str)
     combine_parser.add_argument("--output_prefix", default="by_COMBINED_", help="", type=str)
 
@@ -67,29 +67,37 @@ def main():
 
 def call_functions(wig_path, chrom_sizes, args):
     wiggle = Wiggle(wig_path, chrom_sizes)
+    writer_flag = True
     if args.command == "to_log2":
         wiggle.to_log2(inplace=True)
+        writer_flag = True
     elif args.command == "to_log10":
         wiggle.to_log10(inplace=True)
+        writer_flag = True
     elif args.command == "to_percentile":
         wiggle.to_percentile(args.nth, inplace=True)
+        writer_flag = True
         args.output_prefix = args.output_prefix.replace("nth", f"{args.nth}th")
     elif args.command == "to_step_height":
         wiggle.to_percentile(args.step_range, inplace=True)
-    elif args.command == "combine":
-        wiggle.to_percentile(args.step_range, inplace=True)
+        writer_flag = True
+    elif args.command == "agg_merge":
+        wiggle.agg_merge(args.by, args.output_dir)
+        writer_flag = True
     elif args.command == "split":
-        wiggle.to_percentile(args.step_range, inplace=True)
+        wiggle.split_wiggle(args.by, args.output_dir)
+        writer_flag = False
     else:
         print("Error: unexpected command")
         exit(1)
-    if args.output_dir is None:
-        wiggle.write_wiggle(
-            f"{os.path.dirname(wiggle.file_path)}/{args.output_prefix}"
-            f"{os.path.basename(wiggle.file_path)}")
-    else:
-        wiggle.write_wiggle(
-            f"{os.path.abspath(args.output_dir)}/{args.output_prefix}{os.path.basename(wiggle.file_path)}")
+    if writer_flag:
+        if args.output_dir is None:
+            wiggle.write_wiggle(
+                f"{os.path.dirname(wiggle.file_path)}/{args.output_prefix}"
+                f"{os.path.basename(wiggle.file_path)}")
+        else:
+            wiggle.write_wiggle(
+                f"{os.path.abspath(args.output_dir)}/{args.output_prefix}{os.path.basename(wiggle.file_path)}")
 
 
 def get_chrom_sizes(fasta_pathes):

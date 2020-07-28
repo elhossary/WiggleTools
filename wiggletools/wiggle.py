@@ -16,8 +16,6 @@ class Wiggle:
     def parse(self):
         tmp_dict = {}
         current_wiggle_meta = {}
-        ignored_seqid = []
-        wiggle_seqid = []
         with open(self.file_path, "r") as raw_file:
             print(f"==> Loading file: {os.path.basename(self.file_path)}")
             for line in raw_file.readlines():
@@ -32,25 +30,42 @@ class Wiggle:
                                               "variableStep_chrom": current_wiggle_meta["variableStep_chrom"],
                                               "variableStep_span": current_wiggle_meta["variableStep_span"],
                                               "data": tmp_dict})
-                        wiggle_seqid.append(current_wiggle_meta["variableStep_chrom"])
                         current_wiggle_meta = self.parse_wiggle_header(line, current_wiggle_meta)
+                        tmp_dict.clear()
             # 2 lines repeated because of the file end
             self.raw_data.append({"track_type": current_wiggle_meta["track_type"],
                                   "track_name": current_wiggle_meta["track_name"],
                                   "variableStep_chrom": current_wiggle_meta["variableStep_chrom"],
                                   "variableStep_span": current_wiggle_meta["variableStep_span"],
                                   "data": tmp_dict})
-            wiggle_seqid.append(current_wiggle_meta["variableStep_chrom"])
+            tmp_dict.clear()
 
+    @staticmethod
+    def parse_wiggle_header(line, current_wiggle_meta):
+        if "type=" in line:
+            current_wiggle_meta["track_type"] = line.split('type=')[-1].split(' ')[0].replace('\"', '')
+        if "name=" in line:
+            current_wiggle_meta["track_name"] = line.split('name=')[-1].replace('\n', '').replace('\"', '')
+        if "chrom=" in line:
+            current_wiggle_meta["variableStep_chrom"] = line.split('chrom=')[-1].split(' ')[0].replace('\"', '')
+        if "span=" in line:
+            current_wiggle_meta["variableStep_span"] = line.split('span=')[-1].replace('\n', '').replace('\"', '')
+        return current_wiggle_meta
+
+    def _to_dataframe(self, is_full=True):
+        ignored_seqid = []
+        wiggle_seqid = list(set([item["variableStep_chrom"] for item in self.raw_data]))
         # drop coverage for sequences not in chrom sizes
-        self.raw_data = [item for item in self.raw_data if item["variableStep_chrom"] in self.chrom_sizes.keys()]
+        self.raw_data = [item for item in self.raw_data
+                         if item["variableStep_chrom"] in [x["seqid"] for x in self.chrom_sizes]]
         intersect_seqid = [item["variableStep_chrom"] for item in self.raw_data]
-        ignored_seqid.extend([x + " (found in fasta not in wiggle)"
-                              for x in self.chrom_sizes.keys() if x not in intersect_seqid])
+        ignored_seqid.extend([x["seqid"] + " (found in fasta not in wiggle)"
+                              for x in self.chrom_sizes if x["seqid"] not in intersect_seqid])
         ignored_seqid.extend([x + " (found in wiggle not in fasta)" for x in wiggle_seqid if x not in intersect_seqid])
-
-        self._extend_raw_data_to_full_length_dataframe()
-
+        if is_full:
+            self._extend_raw_data_to_full_length_dataframe()
+        else:
+            self._extend_raw_data_to_min_length_dataframe()
         condition_name = self.wiggle_df["track_name"].unique().tolist()
         if self.wiggle_df[self.wiggle_df["score"] < 0].empty:
             self.orientation = "f"
@@ -73,18 +88,6 @@ class Wiggle:
                   f"     + Ignored sequence IDs:\n"
                   f"     └── {s.join(ignored_seqid)}")
 
-    @staticmethod
-    def parse_wiggle_header(line, current_wiggle_meta):
-        if "type=" in line:
-            current_wiggle_meta["track_type"] = line.split('type=')[-1].split(' ')[0].replace('\"', '')
-        if "name=" in line:
-            current_wiggle_meta["track_name"] = line.split('name=')[-1].replace('\n', '').replace('\"', '')
-        if "chrom=" in line:
-            current_wiggle_meta["variableStep_chrom"] = line.split('chrom=')[-1].split(' ')[0].replace('\"', '')
-        if "span=" in line:
-            current_wiggle_meta["variableStep_span"] = line.split('span=')[-1].replace('\n', '').replace('\"', '')
-        return current_wiggle_meta
-
     def _extend_raw_data_to_full_length_dataframe(self):
         extended_data = []
         for item in self.raw_data:
@@ -93,8 +96,11 @@ class Wiggle:
                          item["variableStep_chrom"],
                          item["variableStep_span"]]
             # make backbone
-
-            tmp_list = [x for x in range(1, self.chrom_sizes[item["variableStep_chrom"]] + 1, 1)]
+            chrom_size = 0
+            for chrom in self.chrom_sizes:
+                if chrom["seqid"] == item["variableStep_chrom"]:
+                    chrom_size = chrom["size"]
+            tmp_list = [x for x in range(1, chrom_size + 1, 1)]
             # map the scores to backbone
             for index, val in enumerate(tmp_list):
                 try:
@@ -106,12 +112,32 @@ class Wiggle:
         column_names = ["track_type", "track_name", "variableStep_chrom", "variableStep_span", "location", "score"]
         self.wiggle_df = pd.DataFrame(extended_data, columns=column_names)
 
+    def _extend_raw_data_to_min_length_dataframe(self):
+        extended_data = []
+        for item in self.raw_data:
+            meta_list = [item["track_type"],
+                         item["track_name"],
+                         item["variableStep_chrom"],
+                         item["variableStep_span"]]
+            tmp_list = []
+            for k, v in item["data"].items():
+                tmp_list.append(meta_list + [k, v])
+            extended_data.extend(tmp_list)
+        column_names = ["track_type", "track_name", "variableStep_chrom", "variableStep_span", "location", "score"]
+        self.wiggle_df = pd.DataFrame(extended_data, columns=column_names)
+
     def get_wiggle(self):
+        self._to_dataframe()
         return self.wiggle_df
 
-    def write_wiggle(self, out_path):
+    def write_wiggle(self, out_path, alt_wiggle_df=None):
         print(f"==> Writing file: {os.path.basename(out_path)}")
-        out_df = self.wiggle_df
+        if alt_wiggle_df is None:
+            out_df = self.wiggle_df
+        else:
+            out_df = alt_wiggle_df
+        # Shrink the dataframe
+        out_df = out_df[out_df["score"] != 0.0]
         out_df["loc_score"] = out_df["location"].astype(str) + " " + out_df["score"].astype(str)
         out_df.drop(["location", "score"], axis=1, inplace=True)
         out_df = out_df.groupby(["track_type", "track_name", "variableStep_chrom", "variableStep_span"])["loc_score"]\
@@ -127,6 +153,7 @@ class Wiggle:
                                   quoting=csv.QUOTE_NONE, quotechar="'", escapechar="\\").replace("\\", ""))
 
     def to_percentile(self, nth, inplace=False):
+        self._to_dataframe()
         print(f"==> Transforming to {nth} percentile")
         ret_df = self.wiggle_df
         seqids = ret_df["variableStep_chrom"].unique().tolist()
@@ -145,6 +172,7 @@ class Wiggle:
             return ret_df
 
     def to_step_height(self, step_range, inplace=False):
+        self._to_dataframe()
         print("==> Transforming to step height")
         ret_df = self.wiggle_df
         seqids = ret_df["variableStep_chrom"].unique().tolist()
@@ -185,6 +213,7 @@ class Wiggle:
         return df[in_col.name]
 
     def to_log2(self, inplace=False):
+        self._to_dataframe()
         print("==> Transforming to Log2")
         ret_df = self.wiggle_df
         if self.orientation == "r":
@@ -199,6 +228,7 @@ class Wiggle:
             return ret_df
 
     def to_log10(self, inplace=False):
+        self._to_dataframe()
         print("==> Transforming to Log10")
         ret_df = self.wiggle_df
         if self.orientation == "r":
@@ -211,3 +241,54 @@ class Wiggle:
             del ret_df
         else:
             return ret_df
+
+    def split_wiggle(self, by, output_dir=None):
+        self._to_dataframe(is_full=False)
+        if by == "seqid":
+            print(f"==> Splitting {os.path.basename(self.file_path)} by sequence ID")
+            seqid_list = self.wiggle_df["variableStep_chrom"].unique()
+            for seqid in seqid_list:
+                if output_dir is None:
+                    out_file_name = f"{os.path.dirname(self.file_path)}/{seqid}_" \
+                                    f"{os.path.basename(self.file_path)}"
+                else:
+                    out_file_name = f"{os.path.abspath(output_dir)}/{seqid}_" \
+                                    f"{os.path.basename(self.file_path)}"
+                self.write_wiggle(out_file_name,
+                                  alt_wiggle_df=self.wiggle_df[self.wiggle_df["variableStep_chrom"] == seqid])
+        elif by == "fasta":
+            print(f"==> Splitting {os.path.basename(self.file_path)} by fasta files")
+            fasta_list = list(set([item["fasta"] for item in self.chrom_sizes]))
+            for fasta in fasta_list:
+                # get list of seqids for each fasta
+                seqids = [x["seqid"] for x in self.chrom_sizes if fasta == x["fasta"]]
+                if output_dir is None:
+                    out_file_name = f"{os.path.dirname(self.file_path)}/{os.path.splitext(fasta)[0]}_"\
+                                    f"{os.path.basename(self.file_path)}"
+                else:
+                    out_file_name = f"{os.path.abspath(output_dir)}/{os.path.splitext(fasta)[0]}_"\
+                                    f"{os.path.basename(self.file_path)}"
+                self.write_wiggle(out_file_name,
+                                  alt_wiggle_df=self.wiggle_df[self.wiggle_df["variableStep_chrom"].isin(seqids)])
+        else:
+            print("Error: bad argument")
+            exit(1)
+
+    def agg_merge(self, by, out_path=None):
+        # TODO
+        pass
+
+"""
+            for item in self.raw_data:
+                if output_dir is None:
+                    out_file_name = f"{os.path.dirname(self.file_path)}/{item['variableStep_chrom']}_"\
+                                    f"{os.path.basename(self.file_path)}"
+                else:
+                    out_file_name = f"{os.path.abspath(output_dir)}/{item['variableStep_chrom']}_"\
+                                    f"{os.path.basename(self.file_path)}"
+                with open(out_file_name, 'w') as f:
+                    print(f"==> Writing file: {os.path.basename(out_file_name)}")
+                    f.write(f'track type={item["track_type"]} name="{item["track_name"]}"\n' + \
+                            f'variableStep chrom={item["variableStep_chrom"]} span="{item["variableStep_span"]}"\n' + \
+                            f'{nl.join([f"{k} {v}" for k, v in item["data"].items()])}')
+"""

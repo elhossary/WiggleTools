@@ -39,6 +39,8 @@ class Wiggle:
                                   "variableStep_span": current_wiggle_meta["variableStep_span"],
                                   "data": tmp_dict})
             tmp_dict.clear()
+            for x in self.raw_data:
+                print(x.values())
 
     @staticmethod
     def parse_wiggle_header(line, current_wiggle_meta):
@@ -105,7 +107,7 @@ class Wiggle:
                 else:
                     tmp_list[index] = meta_list + [val, 0.0]
             extended_data.extend(tmp_list)
-            print(extended_data)
+
         column_names = ["track_type", "track_name", "variableStep_chrom", "variableStep_span", "location", "score"]
         self.wiggle_df = pd.DataFrame(extended_data, columns=column_names)
 

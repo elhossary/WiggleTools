@@ -31,6 +31,7 @@ class Wiggle:
                                               "variableStep_span": current_wiggle_meta["variableStep_span"],
                                               "data": tmp_dict})
                         current_wiggle_meta = self.parse_wiggle_header(line, current_wiggle_meta)
+                        print(tmp_dict)
                         tmp_dict.clear()
             # 2 lines repeated because of the file end
             self.raw_data.append({"track_type": current_wiggle_meta["track_type"],
@@ -102,7 +103,6 @@ class Wiggle:
             for index, val in enumerate(tmp_list):
                 if val in item["data"].keys():
                     tmp_list[index] = meta_list + [val, item["data"][val]]
-                    print("True")
                 else:
                     tmp_list[index] = meta_list + [val, 0.0]
             extended_data.extend(tmp_list)

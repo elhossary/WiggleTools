@@ -117,9 +117,9 @@ class Wiggle:
 
         print(f"==> Writing file: {os.path.basename(out_path)}")
         if alt_wiggle_df is None:
-            out_df = self.wiggle_df
+            out_df = self.wiggle_df.copy()
         else:
-            out_df = alt_wiggle_df
+            out_df = alt_wiggle_df.copy()
         # Shrink the dataframe
         out_df = out_df[out_df["score"] != 0]
 

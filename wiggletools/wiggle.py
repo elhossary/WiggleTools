@@ -29,7 +29,7 @@ class Wiggle:
                                               "track_name": current_wiggle_meta["track_name"],
                                               "variableStep_chrom": current_wiggle_meta["variableStep_chrom"],
                                               "variableStep_span": current_wiggle_meta["variableStep_span"],
-                                              "data": tmp_dict})
+                                              "data": tmp_dict.copy()})
                         current_wiggle_meta = self.parse_wiggle_header(line, current_wiggle_meta)
                         tmp_dict.clear()
             # 2 lines repeated because of the file end
@@ -37,10 +37,8 @@ class Wiggle:
                                   "track_name": current_wiggle_meta["track_name"],
                                   "variableStep_chrom": current_wiggle_meta["variableStep_chrom"],
                                   "variableStep_span": current_wiggle_meta["variableStep_span"],
-                                  "data": tmp_dict})
+                                  "data": tmp_dict.copy()})
             tmp_dict.clear()
-            for x in self.raw_data:
-                print(x.values())
 
     @staticmethod
     def parse_wiggle_header(line, current_wiggle_meta):

@@ -121,8 +121,7 @@ class Wiggle:
         else:
             out_df = alt_wiggle_df
         # Shrink the dataframe
-
-        #out_df = out_df[out_df["score"] != 0]
+        out_df = out_df[out_df["score"] != 0]
 
         out_df["loc_score"] = out_df["location"].astype(str) + " " + out_df["score"].astype(str)
         out_df.drop(["location", "score"], axis=1, inplace=True)

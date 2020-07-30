@@ -52,7 +52,7 @@ class Wiggle:
             current_wiggle_meta["variableStep_span"] = line.split('span=')[-1].replace('\n', '').replace('\"', '')
         return current_wiggle_meta
 
-    def _to_dataframe(self, is_full=True):
+    def _to_dataframe(self):
         ignored_seqid = []
         wiggle_seqid = list(set([item["variableStep_chrom"] for item in self.raw_data]))
         # drop coverage for sequences not in chrom sizes
@@ -62,10 +62,7 @@ class Wiggle:
         ignored_seqid.extend([x["seqid"] + " (found in fasta not in wiggle)"
                               for x in self.chrom_sizes if x["seqid"] not in intersect_seqid])
         ignored_seqid.extend([x + " (found in wiggle not in fasta)" for x in wiggle_seqid if x not in intersect_seqid])
-        if is_full:
-            self._extend_raw_data_to_full_length_dataframe()
-        else:
-            self._extend_raw_data_to_min_length_dataframe()
+        self._extend_raw_data_to_full_length_dataframe()
         condition_name = self.wiggle_df["track_name"].unique().tolist()
         if self.wiggle_df[self.wiggle_df["score"] < 0].empty:
             self.orientation = "f"
@@ -108,20 +105,6 @@ class Wiggle:
                 except:
                     tmp_list[index] = meta_list + [val, 0.0]
 
-            extended_data.extend(tmp_list)
-        column_names = ["track_type", "track_name", "variableStep_chrom", "variableStep_span", "location", "score"]
-        self.wiggle_df = pd.DataFrame(extended_data, columns=column_names)
-
-    def _extend_raw_data_to_min_length_dataframe(self):
-        extended_data = []
-        for item in self.raw_data:
-            meta_list = [item["track_type"],
-                         item["track_name"],
-                         item["variableStep_chrom"],
-                         item["variableStep_span"]]
-            tmp_list = []
-            for k, v in item["data"].items():
-                tmp_list.append(meta_list + [k, v])
             extended_data.extend(tmp_list)
         column_names = ["track_type", "track_name", "variableStep_chrom", "variableStep_span", "location", "score"]
         self.wiggle_df = pd.DataFrame(extended_data, columns=column_names)
@@ -243,7 +226,7 @@ class Wiggle:
             return ret_df
 
     def split_wiggle(self, by, output_dir=None):
-        self._to_dataframe(is_full=False)
+        self._to_dataframe()
         if by == "seqid":
             print(f"==> Splitting {os.path.basename(self.file_path)} by sequence ID")
             seqid_list = self.wiggle_df["variableStep_chrom"].unique()
@@ -257,7 +240,6 @@ class Wiggle:
                 self.write_wiggle(out_file_name,
                                   alt_wiggle_df=self.wiggle_df[self.wiggle_df["variableStep_chrom"] == seqid])
         elif by == "fasta":
-            self._to_dataframe(is_full=False)
             print(f"==> Splitting {os.path.basename(self.file_path)} by fasta files")
             fasta_list = list(set([item["fasta"] for item in self.chrom_sizes]))
             for fasta in fasta_list:

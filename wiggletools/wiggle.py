@@ -269,6 +269,7 @@ class Wiggle:
                 else:
                     out_file_name = f"{os.path.abspath(output_dir)}/{os.path.splitext(fasta)[0]}_"\
                                     f"{os.path.basename(self.file_path)}"
+                print(self.wiggle_df)
                 print(self.wiggle_df[self.wiggle_df["variableStep_chrom"].isin(seqids)])
                 self.write_wiggle(out_file_name,
                                   alt_wiggle_df=self.wiggle_df[self.wiggle_df["variableStep_chrom"].isin(seqids)])

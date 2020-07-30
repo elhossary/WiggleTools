@@ -100,11 +100,10 @@ class Wiggle:
             tmp_list = [x for x in range(1, chrom_size + 1, 1)]
             # map the scores to backbone
             for index, val in enumerate(tmp_list):
-                try:
+                if val in item["data"].keys():
                     tmp_list[index] = meta_list + [val, item["data"][val]]
-                except:
+                else:
                     tmp_list[index] = meta_list + [val, 0.0]
-
             extended_data.extend(tmp_list)
         column_names = ["track_type", "track_name", "variableStep_chrom", "variableStep_span", "location", "score"]
         self.wiggle_df = pd.DataFrame(extended_data, columns=column_names)

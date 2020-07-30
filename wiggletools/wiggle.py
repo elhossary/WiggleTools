@@ -114,14 +114,16 @@ class Wiggle:
         return self.wiggle_df
 
     def write_wiggle(self, out_path, alt_wiggle_df=None):
+        print("1", alt_wiggle_df)
         print(f"==> Writing file: {os.path.basename(out_path)}")
         if alt_wiggle_df is None:
             out_df = self.wiggle_df
         else:
             out_df = alt_wiggle_df
         # Shrink the dataframe
+        print("2", out_df)
         out_df = out_df[out_df["score"] != 0.0]
-        print(out_df)
+        print("3", out_df)
         out_df["loc_score"] = out_df["location"].astype(str) + " " + out_df["score"].astype(str)
         out_df.drop(["location", "score"], axis=1, inplace=True)
         out_df = out_df.groupby(["track_type", "track_name", "variableStep_chrom", "variableStep_span"])["loc_score"]\

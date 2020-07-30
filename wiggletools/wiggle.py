@@ -257,6 +257,7 @@ class Wiggle:
                 self.write_wiggle(out_file_name,
                                   alt_wiggle_df=self.wiggle_df[self.wiggle_df["variableStep_chrom"] == seqid])
         elif by == "fasta":
+            self._to_dataframe(is_full=False)
             print(f"==> Splitting {os.path.basename(self.file_path)} by fasta files")
             fasta_list = list(set([item["fasta"] for item in self.chrom_sizes]))
             for fasta in fasta_list:

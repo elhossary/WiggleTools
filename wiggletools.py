@@ -87,7 +87,7 @@ def call_functions(wig_path, chrom_sizes, args):
         wiggle.split_wiggle(args.by, args.output_dir)
         writer_flag = False
     else:
-        print("Error: unexpected command")
+        print(f"Error: unexpected command {args.command}.")
         exit(1)
     if writer_flag:
         if args.output_dir is None:

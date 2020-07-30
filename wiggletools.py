@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
 from wiggletools import Wiggle
+
 import os
 import glob
 from Bio import SeqIO

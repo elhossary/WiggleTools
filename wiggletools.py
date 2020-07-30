@@ -51,7 +51,6 @@ def main():
             wiggle_pathes.append(os.path.abspath(sub_item))
 
     chrom_sizes = get_chrom_sizes(fasta_pathes)
-
     pool = mp.Pool(processes=args.processes)
     processes = []
     if len(wiggle_pathes) == 0:
@@ -109,6 +108,7 @@ def get_chrom_sizes(fasta_pathes):
                              "size": len(seq_record.seq),
                              "fasta": os.path.basename(fasta_path)})
     return ret_list
+
 
 main()
 exit(0)

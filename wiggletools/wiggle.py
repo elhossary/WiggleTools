@@ -102,6 +102,7 @@ class Wiggle:
             for index, val in enumerate(tmp_list):
                 if val in item["data"].keys():
                     tmp_list[index] = meta_list + [val, item["data"][val]]
+                    print("True")
                 else:
                     tmp_list[index] = meta_list + [val, 0.0]
             extended_data.extend(tmp_list)
@@ -133,7 +134,6 @@ class Wiggle:
                                          ' span=' + out_df["variableStep_span"] + '\n' + out_df["loc_score"]
         out_df.drop(["variableStep_chrom", "variableStep_span", "loc_score"], axis=1, inplace=True)
         out_df = out_df.groupby(["header"])["sub_header_with_data"].apply('\n'.join).reset_index()
-        print(out_df)
         with open(out_path, 'w') as f:
             f.write(out_df.to_csv(index=False, header=False, sep="\n",
                                   quoting=csv.QUOTE_NONE, quotechar="'", escapechar="\\").replace("\\", ""))

@@ -121,6 +121,7 @@ class Wiggle:
             out_df = alt_wiggle_df
         # Shrink the dataframe
         out_df = out_df[out_df["score"] != 0.0]
+        print(out_df)
         out_df["loc_score"] = out_df["location"].astype(str) + " " + out_df["score"].astype(str)
         out_df.drop(["location", "score"], axis=1, inplace=True)
         out_df = out_df.groupby(["track_type", "track_name", "variableStep_chrom", "variableStep_span"])["loc_score"]\
@@ -131,6 +132,7 @@ class Wiggle:
                                          ' span=' + out_df["variableStep_span"] + '\n' + out_df["loc_score"]
         out_df.drop(["variableStep_chrom", "variableStep_span", "loc_score"], axis=1, inplace=True)
         out_df = out_df.groupby(["header"])["sub_header_with_data"].apply('\n'.join).reset_index()
+        print(out_df)
         with open(out_path, 'w') as f:
             f.write(out_df.to_csv(index=False, header=False, sep="\n",
                                   quoting=csv.QUOTE_NONE, quotechar="'", escapechar="\\").replace("\\", ""))
@@ -251,8 +253,6 @@ class Wiggle:
                 else:
                     out_file_name = f"{os.path.abspath(output_dir)}/{os.path.splitext(fasta)[0]}_"\
                                     f"{os.path.basename(self.file_path)}"
-                print(self.wiggle_df)
-                print(self.wiggle_df[self.wiggle_df["variableStep_chrom"].isin(seqids)])
                 self.write_wiggle(out_file_name,
                                   alt_wiggle_df=self.wiggle_df[self.wiggle_df["variableStep_chrom"].isin(seqids)])
         else:

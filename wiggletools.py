@@ -78,7 +78,7 @@ def call_functions(wig_path, chrom_sizes, args):
         writer_flag = True
         args.output_prefix = args.output_prefix.replace("nth", f"{args.nth}th")
     elif args.command == "to_step_height":
-        wiggle.to_percentile(args.step_range, inplace=True)
+        wiggle.to_step_height(args.step_range, inplace=True)
         writer_flag = True
     elif args.command == "agg_merge":
         wiggle.agg_merge(args.by, args.output_dir)

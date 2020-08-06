@@ -66,10 +66,10 @@ def main():
         wig_matrix = WiggleMatrix(parsed_wiggles, chrom_sizes, processes=args.processes)
         wig_matrix.agg_merge(by=args.by)
         wig_matrix.write_matrix_to_wiggle_files(wig_matrix.f_wiggle_matrix_df.loc[:, ["seqid", "location", "agg_col"]],
-                                                args.output_dir,
+                                                os.path.abspath(args.output_dir),
                                                 f'{args.output_prefix.replace("by", args.by.upper())}forward')
         wig_matrix.write_matrix_to_wiggle_files(wig_matrix.r_wiggle_matrix_df.loc[:, ["seqid", "location", "agg_col"]],
-                                                args.output_dir,
+                                                os.path.abspath(args.output_dir),
                                                 f'{args.output_prefix.replace("by", args.by.upper())}reverse')
     else:
         for p in processes:

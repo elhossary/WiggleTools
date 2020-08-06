@@ -88,5 +88,5 @@ class WiggleMatrix:
             file.write(out_str)
             file.close()
             s = '\n     └── '
-            print(f"===> Wrote file: {prefix}{col}.wig, contains sequence IDs:\n"
+            print(f"===> Wrote file: {prefix}.wig, contains sequence IDs:\n"
                   f"     └── {s.join(seqids)}")

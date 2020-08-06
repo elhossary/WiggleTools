@@ -62,14 +62,14 @@ class WiggleMatrix:
         r_cond_cols = self.r_wiggle_matrix_df.columns.tolist()
         r_cond_cols = [x for x in r_cond_cols if x not in ["seqid", "location"]]
         if by == "max":
-            self.f_wiggle_matrix_df["agg_col"] = self.f_wiggle_matrix_df.loc[:, f_cond_cols].max(axis=1)
-            self.r_wiggle_matrix_df["agg_col"] = self.r_wiggle_matrix_df.loc[:, r_cond_cols].min(axis=1)
+            self.f_wiggle_matrix_df["agg_col_forward"] = self.f_wiggle_matrix_df.loc[:, f_cond_cols].max(axis=1)
+            self.r_wiggle_matrix_df["agg_col_reverse"] = self.r_wiggle_matrix_df.loc[:, r_cond_cols].min(axis=1)
         elif by == "min":
-            self.f_wiggle_matrix_df["agg_col"] = self.f_wiggle_matrix_df.loc[:, f_cond_cols].min(axis=1)
-            self.r_wiggle_matrix_df["agg_col"] = self.r_wiggle_matrix_df.loc[:, r_cond_cols].max(axis=1)
+            self.f_wiggle_matrix_df["agg_col_forward"] = self.f_wiggle_matrix_df.loc[:, f_cond_cols].min(axis=1)
+            self.r_wiggle_matrix_df["agg_col_reverse"] = self.r_wiggle_matrix_df.loc[:, r_cond_cols].max(axis=1)
         elif by == "average":
-            self.f_wiggle_matrix_df["agg_col"] = self.f_wiggle_matrix_df.loc[:, f_cond_cols].mean(axis=1)
-            self.r_wiggle_matrix_df["agg_col"] = self.r_wiggle_matrix_df.loc[:, r_cond_cols].mean(axis=1)
+            self.f_wiggle_matrix_df["agg_col_forward"] = self.f_wiggle_matrix_df.loc[:, f_cond_cols].mean(axis=1)
+            self.r_wiggle_matrix_df["agg_col_reverse"] = self.r_wiggle_matrix_df.loc[:, r_cond_cols].mean(axis=1)
         else:
             print("Fatal error")
 

@@ -56,6 +56,7 @@ class WiggleMatrix:
 
     def agg_merge(self, by=None):
         self.get_matrix_by_orientation()
+        print(f"==> Aggregating by {by}")
         f_cond_cols = self.f_wiggle_matrix_df.columns.tolist()
         f_cond_cols = [x for x in f_cond_cols if x not in ["seqid", "location"]]
         r_cond_cols = self.r_wiggle_matrix_df.columns.tolist()

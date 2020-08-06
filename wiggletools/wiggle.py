@@ -52,7 +52,7 @@ class Wiggle:
             current_wiggle_meta["variableStep_span"] = line.split('span=')[-1].replace('\n', '').replace('\"', '')
         return current_wiggle_meta
 
-    def _to_dataframe(self):
+    def _to_dataframe(self, is_full=True):
         ignored_seqid = []
         wiggle_seqid = list(set([item["variableStep_chrom"] for item in self.raw_data]))
         # drop coverage for sequences not in chrom sizes
@@ -62,7 +62,10 @@ class Wiggle:
         ignored_seqid.extend([x["seqid"] + " (found in fasta not in wiggle)"
                               for x in self.chrom_sizes if x["seqid"] not in intersect_seqid])
         ignored_seqid.extend([x + " (found in wiggle not in fasta)" for x in wiggle_seqid if x not in intersect_seqid])
-        self._extend_raw_data_to_full_length_dataframe()
+        if is_full:
+            self._extend_raw_data_to_full_length_dataframe()
+        else:
+            self._extend_raw_data_to_min_length_dataframe()
         condition_name = self.wiggle_df["track_name"].unique().tolist()
         if self.wiggle_df[self.wiggle_df["score"] < 0].empty:
             self.orientation = "f"
@@ -109,8 +112,20 @@ class Wiggle:
         column_names = ["track_type", "track_name", "variableStep_chrom", "variableStep_span", "location", "score"]
         self.wiggle_df = pd.DataFrame(extended_data, columns=column_names)
 
-    def get_wiggle(self):
-        self._to_dataframe()
+    def _extend_raw_data_to_min_length_dataframe(self):
+        extended_data = []
+        for item in self.raw_data:
+            meta_list = [item["track_type"],
+                         item["track_name"],
+                         item["variableStep_chrom"],
+                         item["variableStep_span"]]
+            for k, v in item["data"].items():
+                extended_data.append(meta_list + [k, v])
+        column_names = ["track_type", "track_name", "variableStep_chrom", "variableStep_span", "location", "score"]
+        self.wiggle_df = pd.DataFrame(extended_data, columns=column_names)
+
+    def get_wiggle(self, is_full=True):
+        self._to_dataframe(is_full)
         return self.wiggle_df
 
     def write_wiggle(self, out_path, alt_wiggle_df=None):
@@ -156,7 +171,7 @@ class Wiggle:
         else:
             return ret_df
 
-    def to_step_height(self, step_range, inplace=False):
+    def to_step_height(self, step_range, step_direction, inplace=False):
         self._to_dataframe()
         print("==> Transforming to step height")
         ret_df = self.wiggle_df
@@ -165,11 +180,11 @@ class Wiggle:
             if self.orientation == "r":
                 ret_df.loc[ret_df["variableStep_chrom"] == seqid, "score"] = \
                     self._generate_step_height_col(ret_df[ret_df["variableStep_chrom"] == seqid]["score"].abs(),
-                                                   step_range, self.orientation) * -1
+                                                   step_range, step_direction, self.orientation) * -1
             else:
                 ret_df.loc[ret_df["variableStep_chrom"] == seqid, "score"] = \
                     self._generate_step_height_col(ret_df[ret_df["variableStep_chrom"] == seqid]["score"],
-                                                   step_range, self.orientation)
+                                                   step_range, step_direction, self.orientation)
         if inplace:
             self.wiggle_df = ret_df
             del ret_df
@@ -177,17 +192,21 @@ class Wiggle:
             return ret_df
 
     @staticmethod
-    def _generate_step_height_col(in_col, step_range, orientation):
+    def _generate_step_height_col(in_col, step_range, step_direction, orientation):
         df = pd.DataFrame()
         df["scores"] = in_col
         df["mean_before"] = df["scores"]
         df["mean_after"] = df["scores"].shift(-(step_range + 1))
         df["mean_before"] = df["mean_before"].rolling(step_range).mean()
         df["mean_after"] = df["mean_after"].rolling(step_range).mean()
-        if orientation == "f":
+        if step_direction == "end_start" and orientation == "f":
             df["step_height"] = df["mean_before"] - df["mean_after"]
-        elif orientation == "r":
+        elif step_direction == "end_start" and orientation == "r":
             df["step_height"] = df["mean_after"] - df["mean_before"]
+        elif step_direction == "start_end" and orientation == "f":
+            df["step_height"] = df["mean_after"] - df["mean_before"]
+        elif step_direction == "start_end" and orientation == "r":
+            df["step_height"] = df["mean_before"] - df["mean_after"]
         else:
             print("Error")
             exit(1)
@@ -259,9 +278,6 @@ class Wiggle:
             print("Error: bad argument")
             exit(1)
 
-    def agg_merge(self, by, out_path=None):
-        # TODO
-        pass
 
 """
             for item in self.raw_data:

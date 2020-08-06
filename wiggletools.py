@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
 from wiggletools.wiggle import Wiggle
+from wiggletools.wiggle_matrix import WiggleMatrix
 import os
 import glob
 from Bio import SeqIO
@@ -18,6 +19,8 @@ def main():
 
     step_height_parser = subparsers.add_parser("to_step_height")
     step_height_parser.add_argument("--step_range", default=3, help="", type=int)
+    step_height_parser.add_argument("--step_direction", choices=["start_end", "end_start"],
+                                    required=True, help="", type=str)
     step_height_parser.add_argument("--output_prefix", default="STEP_HIEGHT_", help="", type=str)
 
     percentile_parser = subparsers.add_parser("to_percentile")
@@ -32,7 +35,7 @@ def main():
 
     combine_parser = subparsers.add_parser("agg_merge")
     combine_parser.add_argument("--by", choices=["max", "min", "average"], help="", type=str)
-    combine_parser.add_argument("--output_prefix", default="by_COMBINED_", help="", type=str)
+    combine_parser.add_argument("--output_prefix", default="by_AGG_", help="", type=str)
 
     split_parser = subparsers.add_parser("split")
     split_parser.add_argument("--by", choices=["seqid", "fasta"], help="", type=str)
@@ -58,8 +61,19 @@ def main():
         exit(1)
     for wiggle_path in wiggle_pathes:
         processes.append(pool.apply_async(call_functions, (os.path.abspath(wiggle_path), chrom_sizes, args, )))
-    for p in processes:
-        p.get()
+    if args.command == "agg_merge":
+        parsed_wiggles = [p.get() for p in processes]
+        wig_matrix = WiggleMatrix(parsed_wiggles, chrom_sizes, processes=args.processes)
+        wig_matrix.agg_merge(by=args.by)
+        wig_matrix.write_matrix_to_wiggle_files(wig_matrix.f_wiggle_matrix_df.loc[:, ["seqid", "location", "agg_col"]],
+                                                args.output_dir,
+                                                f'{args.output_prefix.replace("by", args.by.upper())}forward')
+        wig_matrix.write_matrix_to_wiggle_files(wig_matrix.r_wiggle_matrix_df.loc[:, ["seqid", "location", "agg_col"]],
+                                                args.output_dir,
+                                                f'{args.output_prefix.replace("by", args.by.upper())}reverse')
+    else:
+        for p in processes:
+            p.get()
     pool.close()
     exit(0)
 
@@ -78,11 +92,10 @@ def call_functions(wig_path, chrom_sizes, args):
         writer_flag = True
         args.output_prefix = args.output_prefix.replace("nth", f"{args.nth}th")
     elif args.command == "to_step_height":
-        wiggle.to_step_height(args.step_range, inplace=True)
+        wiggle.to_step_height(args.step_range, args.step_direction, inplace=True)
         writer_flag = True
     elif args.command == "agg_merge":
-        wiggle.agg_merge(args.by, args.output_dir)
-        writer_flag = True
+        return wiggle.get_wiggle(is_full=False)
     elif args.command == "split":
         wiggle.split_wiggle(args.by, args.output_dir)
         writer_flag = False

@@ -65,12 +65,14 @@ def main():
         parsed_wiggles = [p.get() for p in processes]
         wig_matrix = WiggleMatrix(parsed_wiggles, chrom_sizes, processes=args.processes)
         wig_matrix.agg_merge(by=args.by)
-        wig_matrix.write_matrix_to_wiggle_files(wig_matrix.f_wiggle_matrix_df.loc[:, ["seqid", "location", "agg_col"]],
-                                                os.path.abspath(args.output_dir),
-                                                f'{args.output_prefix.replace("by", args.by.upper())}forward')
-        wig_matrix.write_matrix_to_wiggle_files(wig_matrix.r_wiggle_matrix_df.loc[:, ["seqid", "location", "agg_col"]],
-                                                os.path.abspath(args.output_dir),
-                                                f'{args.output_prefix.replace("by", args.by.upper())}reverse')
+        wig_matrix.write_matrix_to_wiggle_files(
+            wig_matrix.f_wiggle_matrix_df.loc[:, ["seqid", "location", "agg_col_forward"]],
+            os.path.abspath(args.output_dir),
+            f'{args.output_prefix.replace("by", args.by.upper())}forward')
+        wig_matrix.write_matrix_to_wiggle_files(
+            wig_matrix.r_wiggle_matrix_df.loc[:, ["seqid", "location", "agg_col_reverse"]],
+            os.path.abspath(args.output_dir),
+            f'{args.output_prefix.replace("by", args.by.upper())}reverse')
     else:
         for p in processes:
             p.get()

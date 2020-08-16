@@ -152,7 +152,7 @@ class Wiggle:
             f.write(out_df.to_csv(index=False, header=False, sep="\n",
                                   quoting=csv.QUOTE_NONE, quotechar="'", escapechar="\\").replace("\\", ""))
 
-    def to_percentile(self, nth, inplace=False):
+    def to_percentile(self, nth, scope="global", inplace=False):
         self._to_dataframe()
         print(f"==> Transforming to {nth} percentile")
         ret_df = self.wiggle_df
@@ -161,9 +161,22 @@ class Wiggle:
             col = ret_df[ret_df["variableStep_chrom"] == seqid]["score"]
             if self.orientation == "r":
                 col = col.abs()
-                ret_df.loc[ret_df["variableStep_chrom"] == seqid, "score"] = (col / np.percentile(col, nth)) * -1
+                if scope == "global":
+                    ret_df.loc[ret_df["variableStep_chrom"] == seqid, "score"] = (col / np.percentile(col, nth)) * -1
+                elif scope == "stretch":
+                    pass
+                    # TODO
+                else:
+                    print("Bad option")
             else:
-                ret_df.loc[ret_df["variableStep_chrom"] == seqid, "score"] = (col / np.percentile(col, nth))
+                if scope == "global":
+                    ret_df.loc[ret_df["variableStep_chrom"] == seqid, "score"] = (col / np.percentile(col, nth))
+                elif scope == "stretch":
+                    pass
+                    # TODO
+                else:
+                    print("Bad option")
+
         ret_df["score"] = ret_df["score"].replace([np.nan, np.inf, -np.inf], 0.0)
         if inplace:
             self.wiggle_df = ret_df

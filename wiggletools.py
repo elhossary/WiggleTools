@@ -25,6 +25,7 @@ def main():
 
     percentile_parser = subparsers.add_parser("to_percentile")
     percentile_parser.add_argument("--nth", required=True, type=float, choices=range(0, 101, 1))
+    percentile_parser.add_argument("--scope", required=True, type=str, choices=["global", "stretch"])
     percentile_parser.add_argument("--output_prefix", default=f"nth_PERCENTILE_", help="", type=str)
 
     log2_parser = subparsers.add_parser("to_log2")
@@ -90,7 +91,7 @@ def call_functions(wig_path, chrom_sizes, args):
         wiggle.to_log10(inplace=True)
         writer_flag = True
     elif args.command == "to_percentile":
-        wiggle.to_percentile(args.nth, inplace=True)
+        wiggle.to_percentile(args.nth, scope=args.scope, inplace=True)
         writer_flag = True
         args.output_prefix = args.output_prefix.replace("nth", f"{args.nth}th")
     elif args.command == "to_step_height":

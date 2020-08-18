@@ -85,8 +85,8 @@ class WiggleMatrix:
                 out_str += f'variableStep chrom={seqid} span=1\n'
                 out_str += matrix[matrix["seqid"] == seqid][["location", col]]\
                     .to_csv(index=False, header=False, mode='a', sep=" ")
-            out_dir = os.path.abspath(out_dir)
-            file = open(os.path.abspath(f"{os.path.dirname(out_dir)}/{prefix}.wig"), "w")
+            file_path = os.path.abspath(f"{out_dir}/{prefix}.wig")
+            file = open(file_path, "w")
             file.write(out_str)
             file.close()
             s = '\n     └── '

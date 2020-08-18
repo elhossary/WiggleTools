@@ -53,6 +53,7 @@ class WiggleMatrix:
                     r_column_list.append(column)
         self.f_wiggle_matrix_df = self.wiggle_matrix_df.loc[:, f_column_list]
         self.r_wiggle_matrix_df = self.wiggle_matrix_df.loc[:, r_column_list]
+        return self.f_wiggle_matrix_df, self.r_wiggle_matrix_df
 
     def agg_merge(self, by=None):
         self.get_matrix_by_orientation()

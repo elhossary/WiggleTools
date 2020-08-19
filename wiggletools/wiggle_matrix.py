@@ -29,10 +29,9 @@ class WiggleMatrix:
 
     def _merge_single_wiggle_to_matrix(self, wig):
         condition_name = wig.at[0, "track_name"]
-
         self.wiggle_matrix_df = pd.merge(how='outer',
                                          left=self.wiggle_matrix_df,
-                                         right=wig[["variableStep_chrom", "location", "score"]],
+                                         right=wig.loc[:, ["variableStep_chrom", "location", "score"]],
                                          left_on=['seqid', 'location'],
                                          right_on=['variableStep_chrom', 'location']).fillna(0.0)
         self.wiggle_matrix_df.rename(columns={"score": condition_name}, inplace=True)
@@ -40,6 +39,7 @@ class WiggleMatrix:
             if "variableStep_chrom" in column:
                 self.wiggle_matrix_df.drop(column, axis=1, inplace=True)
         print(f"==> Merged condition {condition_name} to matrix")
+
         return self.wiggle_matrix_df[condition_name]
 
     def get_matrix_by_orientation(self):
@@ -77,13 +77,13 @@ class WiggleMatrix:
     @staticmethod
     def write_matrix_to_wiggle_files(matrix, out_dir, prefix=None):
         print("==> Writing wiggle files")
-        seqids = matrix["seqid"].unique()
+        seqids = matrix["seqid"].unique().tolist()
+        print(seqids)
         columns = [col for col in matrix.columns if col not in ["seqid", "location"]]
         out_str = ""
         for col in columns:
             out_str += f'track type=wiggle_0 name="{col}"\n'
             for seqid in seqids:
-                print(seqid)
                 out_str += f'variableStep chrom={seqid} span=1\n'
                 out_str += matrix[matrix["seqid"] == seqid][["location", col]]\
                     .to_csv(index=False, header=False, mode='a', sep=" ")

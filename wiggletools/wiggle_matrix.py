@@ -29,6 +29,7 @@ class WiggleMatrix:
 
     def _merge_single_wiggle_to_matrix(self, wig):
         condition_name = wig.at[0, "track_name"]
+        print(wig["variableStep_chrom"].unique())
         self.wiggle_matrix_df = pd.merge(how='outer',
                                          left=self.wiggle_matrix_df,
                                          right=wig.loc[:, ["variableStep_chrom", "location", "score"]],
@@ -39,7 +40,7 @@ class WiggleMatrix:
             if "variableStep_chrom" in column:
                 self.wiggle_matrix_df.drop(column, axis=1, inplace=True)
         print(f"==> Merged condition {condition_name} to matrix")
-
+        print(self.wiggle_matrix_df["seqid"].unique())
         return self.wiggle_matrix_df[condition_name]
 
     def get_matrix_by_orientation(self):

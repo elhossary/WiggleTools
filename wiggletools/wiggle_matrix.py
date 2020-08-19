@@ -79,8 +79,8 @@ class WiggleMatrix:
         print("==> Writing wiggle files")
         seqids = matrix["seqid"].unique()
         columns = [col for col in matrix.columns if col not in ["seqid", "location"]]
+        out_str = ""
         for col in columns:
-            out_str = ""
             out_str += f'track type=wiggle_0 name="{col}"\n'
             for seqid in seqids:
                 out_str += f'variableStep chrom={seqid} span=1\n'

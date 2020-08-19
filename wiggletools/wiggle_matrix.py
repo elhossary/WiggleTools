@@ -78,6 +78,7 @@ class WiggleMatrix:
     def write_matrix_to_wiggle_files(matrix, out_dir, prefix=None):
         print("==> Writing wiggle files")
         seqids = matrix["seqid"].unique()
+        print(seqids)
         columns = [col for col in matrix.columns if col not in ["seqid", "location"]]
         for col in columns:
             out_str = ""

@@ -83,6 +83,7 @@ class WiggleMatrix:
         for col in columns:
             out_str += f'track type=wiggle_0 name="{col}"\n'
             for seqid in seqids:
+                print(seqid)
                 out_str += f'variableStep chrom={seqid} span=1\n'
                 out_str += matrix[matrix["seqid"] == seqid][["location", col]]\
                     .to_csv(index=False, header=False, mode='a', sep=" ")

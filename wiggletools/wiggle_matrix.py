@@ -29,7 +29,6 @@ class WiggleMatrix:
 
     def _merge_single_wiggle_to_matrix(self, wig):
         condition_name = wig.at[0, "track_name"]
-
         self.wiggle_matrix_df = pd.merge(how='outer',
                                          left=self.wiggle_matrix_df,
                                          right=wig[["variableStep_chrom", "location", "score"]],

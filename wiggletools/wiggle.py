@@ -273,7 +273,7 @@ class Wiggle:
             if self.orientation == "r":
                 ret_df["score"] = ret_df["score"].abs().multiply(value).multiply(-1)
             else:
-                ret_df["score"] = ret_df["score"]
+                ret_df["score"] = ret_df["score"].multiply(value)
             ret_df["score"] = ret_df["score"].replace([np.nan, np.inf, -np.inf], 0.0)
         elif opt == "div":
             print(f"==> Dividing coverage by {value} ")

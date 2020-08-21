@@ -259,6 +259,38 @@ class Wiggle:
         else:
             return ret_df
 
+    def arithmethic(self, opt, value, inplace=False):
+        self._to_dataframe()
+        ret_df = self.wiggle_df
+        if opt == "add":
+            print(f"==> Adding {value} to coverage")
+            #TODO
+        elif opt == "sub":
+            print(f"==> Subtracting {value} from coverage")
+            #TODO
+        elif opt == "mul":
+            print(f"==> Multiplying coverage by {value}")
+            if self.orientation == "r":
+                ret_df["score"] = (ret_df["score"].abs() * value) * -1
+            else:
+                ret_df["score"] = ret_df["score"] * value
+            ret_df["score"] = ret_df["score"].replace([np.nan, np.inf, -np.inf], 0.0)
+        elif opt == "div":
+            print(f"==> Dividing coverage by {value} ")
+            if self.orientation == "r":
+                ret_df["score"] = (ret_df["score"].abs() / value) * -1
+            else:
+                ret_df["score"] = ret_df["score"] / value
+            ret_df["score"] = ret_df["score"].replace([np.nan, np.inf, -np.inf], 0.0)
+        else:
+            print("Bad option")
+            exit(1)
+        if inplace:
+            self.wiggle_df = ret_df
+            del ret_df
+        else:
+            return ret_df
+
     def split_wiggle(self, by, output_dir=None):
         self._to_dataframe()
         if by == "seqid":

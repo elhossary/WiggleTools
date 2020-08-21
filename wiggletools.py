@@ -41,6 +41,11 @@ def main():
     split_parser = subparsers.add_parser("split")
     split_parser.add_argument("--by", choices=["seqid", "fasta"], help="", type=str)
 
+    arth_parser = subparsers.add_parser("arithmetic")
+    arth_parser.add_argument("--opt", choices=["div", "mul", "sub", "add"], help="", type=str)
+    arth_parser.add_argument("--value", required=True, help="", type=float)
+    arth_parser.add_argument("--output_prefix", default="", help="", type=str)
+
     args = parser.parse_args()
     # Handling main arguments
     fasta_pathes = []
@@ -102,6 +107,9 @@ def call_functions(wig_path, chrom_sizes, args):
     elif args.command == "split":
         wiggle.split_wiggle(args.by, args.output_dir)
         writer_flag = False
+    elif args.command == "arithmetic":
+        wiggle.arithmethic(args.opt, args.value, inplace=True)
+        writer_flag = True
     else:
         print(f"Error: unexpected command {args.command}.")
         exit(1)

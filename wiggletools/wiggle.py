@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import csv
 import numpy as np
+import re
 
 
 class Wiggle:
@@ -14,31 +15,44 @@ class Wiggle:
         self.orientation = None
 
     def parse(self):
-        tmp_dict = {}
         current_wiggle_meta = {}
         with open(self.file_path, "r") as raw_file:
             print(f"==> Loading file: {os.path.basename(self.file_path)}")
-            for line in raw_file.readlines():
-                if line[0].isnumeric():
-                    tmp_dict[int(line.split(" ")[0])] = float(line.split(" ")[1].replace("\n", ""))
+            file_header, all_contents = self._parse_wiggle_str(raw_file.read())
+            current_wiggle_meta = self.parse_wiggle_header(file_header, current_wiggle_meta)
+            tmp_dict = {}
+            for content_header, content in all_contents.items():
+                if "-" in content:
+                    self.orientation = "r"
                 else:
-                    if 0 <= len(current_wiggle_meta.keys()) <= 2:
-                        current_wiggle_meta = self.parse_wiggle_header(line, current_wiggle_meta)
-                    else:
-                        self.raw_data.append({"track_type": current_wiggle_meta["track_type"],
-                                              "track_name": current_wiggle_meta["track_name"],
-                                              "variableStep_chrom": current_wiggle_meta["variableStep_chrom"],
-                                              "variableStep_span": current_wiggle_meta["variableStep_span"],
-                                              "data": tmp_dict.copy()})
-                        current_wiggle_meta = self.parse_wiggle_header(line, current_wiggle_meta)
-                        tmp_dict.clear()
-            # 2 lines repeated because of the file end
-            self.raw_data.append({"track_type": current_wiggle_meta["track_type"],
-                                  "track_name": current_wiggle_meta["track_name"],
-                                  "variableStep_chrom": current_wiggle_meta["variableStep_chrom"],
-                                  "variableStep_span": current_wiggle_meta["variableStep_span"],
-                                  "data": tmp_dict.copy()})
-            tmp_dict.clear()
+                    self.orientation = "f"
+                for i in content.split("\n"):
+                    line_split = i.split(" ")
+                    if len(line_split) == 2:
+                        tmp_dict[int(line_split[0])] = float(line_split[1])
+                current_wiggle_meta = self.parse_wiggle_header(content_header, current_wiggle_meta)
+                self.raw_data.append({"track_type": current_wiggle_meta["track_type"],
+                                      "track_name": current_wiggle_meta["track_name"],
+                                      "variableStep_chrom": current_wiggle_meta["variableStep_chrom"],
+                                      "variableStep_span": current_wiggle_meta["variableStep_span"],
+                                      "data": tmp_dict.copy()})
+
+
+    @staticmethod
+    def _parse_wiggle_str(in_str):
+        ret_dict = {}
+        header_text = in_str.split("\n", maxsplit=1)[0]
+        in_str = in_str.replace(header_text + "\n", "")
+        all_headers = re.findall(r'^.*chrom=.*$', in_str, flags=re.MULTILINE | re.IGNORECASE)
+        splitters = ""
+        for header in all_headers:
+            splitters += header + "|"
+        splitters = f"({splitters[:-1]})"
+        split_str_list = re.split(rf"{splitters}", in_str, flags=re.MULTILINE | re.IGNORECASE)
+        content_list = [i for i in split_str_list if i != '']
+        for i in range(0, len(content_list), 2):
+            ret_dict[content_list[i]] = content_list[i + 1]
+        return header_text, ret_dict
 
     @staticmethod
     def parse_wiggle_header(line, current_wiggle_meta):
@@ -67,13 +81,6 @@ class Wiggle:
         else:
             self._extend_raw_data_to_min_length_dataframe()
         condition_name = self.wiggle_df["track_name"].unique().tolist()
-        if self.wiggle_df[self.wiggle_df["score"] < 0].empty:
-            self.orientation = "f"
-        elif self.wiggle_df[self.wiggle_df["score"] > 0].empty:
-            self.orientation = "r"
-        else:
-            print("Error identifying wiggle orientation")
-            exit(1)
 
         # Logging
         s = '\n     └── '

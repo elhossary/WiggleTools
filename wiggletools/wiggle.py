@@ -42,7 +42,6 @@ class Wiggle:
                         if current_wiggle_meta["variableStep_chrom"] == chrom["seqid"]:
                             chrom_size = chrom["size"]
                             break
-                    print(current_wiggle_meta["variableStep_chrom"], chrom_size)
                     if chrom_size > 0:
                         tmp_lst = [{"track_type": current_wiggle_meta["track_type"],
                                     "track_name": current_wiggle_meta["track_name"],

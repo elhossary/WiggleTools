@@ -57,6 +57,7 @@ class Wiggle:
                                                   left_on=join_columns, right_on=join_columns)
                         self.wiggle_df["score"] = self.wiggle_df["score"].combine_first(self.wiggle_df["score_new"])
                         self.wiggle_df.drop(["score_new"], inplace=True, axis=1)
+                        print(self.wiggle_df.head(10).to_string())
                     else:
                         ignored_seqid.append(current_wiggle_meta["variableStep_chrom"])
                 else:

@@ -25,6 +25,7 @@ class WiggleMatrix:
         columns_series = [p.get() for p in processes]
         for column in columns_series:
             self.wiggle_matrix_df[column.name] = column
+        exit(0)
         self.get_matrix_by_orientation()
 
     def _merge_single_wiggle_to_matrix(self, wig):
@@ -35,6 +36,7 @@ class WiggleMatrix:
                                          left_on=['seqid', 'location'],
                                          right_on=['variableStep_chrom', 'location']).fillna(0.0)
         self.wiggle_matrix_df.rename(columns={"score": condition_name}, inplace=True)
+        print(self.wiggle_matrix_df.head().to_string())
         for column in self.wiggle_matrix_df.columns.tolist():
             if "variableStep_chrom" in column:
                 self.wiggle_matrix_df.drop(column, axis=1, inplace=True)

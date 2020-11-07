@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from functools import reduce
 import numpy as np
 
 
@@ -16,23 +17,36 @@ class WiggleMatrix:
 
     def build_matrix(self):
         print("Building the matrix from the parsed files")
-        columns_series = []
-        for parsed_wiggle in self.parsed_wiggles:
-            columns_series.append(self._merge_single_wiggle_to_matrix(parsed_wiggle))
-        for column in columns_series:
-            self.wiggle_matrix_df[column.name] = column
+        self.prep_wiggles()
+        self.prep_matrix_df()
+        all_dfs = [self.wiggle_matrix_df]
+        all_dfs.extend(self.parsed_wiggles)
+        self.wiggle_matrix_df = reduce(lambda x, y: pd.merge(x, y, on=['seqid', 'location'], how='left'), all_dfs)
         del self.parsed_wiggles
-        self.wiggle_matrix_df["location"] = pd.to_numeric(self.wiggle_matrix_df["location"], downcast='integer')
+        for col in self.wiggle_matrix_df.columns:
+            if col not in ["seqid", "location"]:
+                self.wiggle_matrix_df[col] = self.wiggle_matrix_df[col].fillna(0.0)
+                self.wiggle_matrix_df["col"] = pd.to_numeric(self.wiggle_matrix_df["col"], downcast='float')
         self.wiggle_matrix_df.reset_index(drop=True)
         self.get_matrix_by_orientation()
 
-    def _merge_single_wiggle_to_matrix(self, wig):
-        condition_name = wig.at[0, "track_name"]
-        if condition_name in self.wiggle_matrix_df.columns:
-            print("Warning: Duplicate condition name found and IGNORED")
-            return self.wiggle_matrix_df[condition_name]
-        wig_seqid_list = wig["variableStep_chrom"].unique().tolist()
-        for seqid in wig_seqid_list:
+    def prep_wiggles(self):
+        fasta_seqids = [chrom["seqid"] for chrom in self.chrom_sizes]
+        for idx, wig in enumerate(self.parsed_wiggles):
+            condition_name = wig.at[0, "track_name"]
+            self.parsed_wiggles[idx].drop(["track_type", "track_name", "variableStep_span"], inplace=True, axis=1)
+            self.parsed_wiggles[idx].rename(
+                {"score": condition_name, "variableStep_chrom": "seqid"}, inplace=True, axis=1)
+            self.parsed_wiggles[idx] = self.parsed_wiggles[idx][self.parsed_wiggles[idx]["seqid"].isin(fasta_seqids)]
+
+    def get_wiggle_seqids(self):
+        seqids = []
+        for wig in self.parsed_wiggles:
+            seqids.extend(wig["seqid"].unique().tolist())
+        return list(set(seqids))
+
+    def prep_matrix_df(self):
+        for seqid in self.get_wiggle_seqids():
             if seqid not in self.wiggle_matrix_df["seqid"]:
                 chrom_size = 0
                 for chrom in self.chrom_sizes:
@@ -45,21 +59,6 @@ class WiggleMatrix:
                         tmp_lst.append({"seqid": seqid, "location": i})
                     self.wiggle_matrix_df = self.wiggle_matrix_df.append(tmp_lst, ignore_index=True)
                     del tmp_lst
-        self.wiggle_matrix_df[condition_name] = np.nan
-        self.wiggle_matrix_df = pd.merge(how='left',
-                                         left=self.wiggle_matrix_df,
-                                         right=wig.loc[:, ["variableStep_chrom", "location", "score"]],
-                                         left_on=['seqid', 'location'],
-                                         right_on=['variableStep_chrom', 'location'])
-        del wig
-        self.wiggle_matrix_df[condition_name] = \
-            self.wiggle_matrix_df[condition_name].fillna(self.wiggle_matrix_df["score"])
-        self.wiggle_matrix_df[condition_name] = pd.to_numeric(self.wiggle_matrix_df[condition_name], downcast='float')
-        self.wiggle_matrix_df.drop("score", axis=1, inplace=True)
-        self.wiggle_matrix_df.drop("variableStep_chrom", axis=1, inplace=True)
-        self.wiggle_matrix_df[condition_name] = self.wiggle_matrix_df[condition_name].fillna(0.0)
-        print(f"==> Merged condition '{condition_name}' to the matrix")
-        return self.wiggle_matrix_df[condition_name]
 
     def get_matrix_by_orientation(self):
         f_column_list = ["seqid", "location"]

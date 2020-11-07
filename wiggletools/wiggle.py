@@ -49,6 +49,7 @@ class Wiggle:
                                     "location": x} for x in range(1, chrom_size + 1, 1)]
                         append_df = pd.DataFrame(columns=self.wiggle_df_columns)
                         append_df = append_df.append(tmp_lst, ignore_index=True)
+                        del tmp_lst
                         join_columns = ["track_type", "track_name", "variableStep_chrom",
                                         "variableStep_span", "location"]
                         append_df = pd.merge(how='left',
@@ -57,11 +58,13 @@ class Wiggle:
                         append_df["score"] = append_df["score"].combine_first(append_df["score_new"])
                         append_df.drop(["score_new"], inplace=True, axis=1)
                         self.wiggle_df = self.wiggle_df.append(append_df)
+                        del append_df
                     else:
                         ignored_seqid.append(current_wiggle_meta["variableStep_chrom"])
                 else:
                     tmp_df.rename(columns={"score_new": "score"}, inplace=True)
                     self.wiggle_df = self.wiggle_df.append(tmp_df)
+                    del tmp_df
             self.wiggle_df["score"] = self.wiggle_df["score"].fillna(0.0)
             self.wiggle_df.reset_index(drop=True, inplace=True)
             self.wiggle_df["location"] = pd.to_numeric(self.wiggle_df["location"], downcast='integer')

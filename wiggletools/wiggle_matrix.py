@@ -11,9 +11,9 @@ class WiggleMatrix:
         self.chrom_sizes = chrom_sizes
         basic_columns = {"seqid": str, "location": int}
         self.wiggle_matrix_df = pd.DataFrame(columns=basic_columns)
-        self.build_matrix()
         self.f_wiggle_matrix_df = None
         self.r_wiggle_matrix_df = None
+        self.build_matrix()
 
     def build_matrix(self):
         print("Building the matrix from the parsed files")
@@ -23,11 +23,13 @@ class WiggleMatrix:
         all_dfs.extend(self.parsed_wiggles)
         self.wiggle_matrix_df = reduce(lambda x, y: pd.merge(x, y, on=['seqid', 'location'], how='left'), all_dfs)
         del self.parsed_wiggles
+        del all_dfs
         for col in self.wiggle_matrix_df.columns:
             if col not in ["seqid", "location"]:
                 self.wiggle_matrix_df[col] = self.wiggle_matrix_df[col].fillna(0.0)
-                self.wiggle_matrix_df["col"] = pd.to_numeric(self.wiggle_matrix_df["col"], downcast='float')
+                self.wiggle_matrix_df[col] = pd.to_numeric(self.wiggle_matrix_df[col], downcast='float')
         self.wiggle_matrix_df.reset_index(drop=True)
+        print("Wiggles matrix built")
         self.get_matrix_by_orientation()
 
     def prep_wiggles(self):

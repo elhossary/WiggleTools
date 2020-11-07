@@ -35,7 +35,6 @@ class Wiggle:
                 tmp_df["track_name"] = current_wiggle_meta["track_name"]
                 tmp_df["variableStep_chrom"] = current_wiggle_meta["variableStep_chrom"]
                 tmp_df["variableStep_span"] = current_wiggle_meta["variableStep_span"]
-
                 if is_len_extended:
                     chrom_size = 0
                     for chrom in self.chrom_sizes:
@@ -52,7 +51,7 @@ class Wiggle:
                         append_df = append_df.append(tmp_lst, ignore_index=True)
                         join_columns = ["track_type", "track_name", "variableStep_chrom",
                                         "variableStep_span", "location"]
-                        append_df = pd.merge(how='inner',
+                        append_df = pd.merge(how='left',
                                              left=append_df, right=tmp_df,
                                              left_on=join_columns, right_on=join_columns)
                         append_df["score"] = append_df["score"].combine_first(append_df["score_new"])
@@ -61,9 +60,10 @@ class Wiggle:
                     else:
                         ignored_seqid.append(current_wiggle_meta["variableStep_chrom"])
                 else:
-                    tmp_df.rename({"score_new", "score"}, inplace=True)
+                    tmp_df.rename(columns={"score_new": "score"}, inplace=True)
                     self.wiggle_df = self.wiggle_df.append(tmp_df)
             self.wiggle_df["score"] = self.wiggle_df["score"].fillna(0.0)
+            self.wiggle_df.reset_index(drop=True, inplace=True)
             # Logging
             wiggle_seqid = self.wiggle_df["variableStep_chrom"].unique().tolist()
             condition_name = self.wiggle_df["track_name"].unique().tolist()

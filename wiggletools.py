@@ -103,7 +103,7 @@ def call_functions(wig_path, chrom_sizes, args):
         wiggle.to_step_height(args.step_range, args.step_direction, inplace=True)
         writer_flag = True
     elif args.command == "agg_merge":
-        return wiggle.get_wiggle(is_full=False)
+        return wiggle.get_wiggle(is_len_extended=False)
     elif args.command == "split":
         wiggle.split_wiggle(args.by, args.output_dir)
         writer_flag = False

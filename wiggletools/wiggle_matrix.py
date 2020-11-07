@@ -21,6 +21,7 @@ class WiggleMatrix:
             columns_series.append(self._merge_single_wiggle_to_matrix(parsed_wiggle))
         for column in columns_series:
             self.wiggle_matrix_df[column.name] = column
+        self.wiggle_matrix_df["location"] = pd.to_numeric(self.wiggle_matrix_df["location"], downcast='integer')
         self.get_matrix_by_orientation()
 
     def _merge_single_wiggle_to_matrix(self, wig):
@@ -49,6 +50,7 @@ class WiggleMatrix:
                                          right_on=['variableStep_chrom', 'location'])
         self.wiggle_matrix_df[condition_name] = \
             self.wiggle_matrix_df[condition_name].fillna(self.wiggle_matrix_df["score"])
+        self.wiggle_matrix_df[condition_name] = pd.to_numeric(self.wiggle_matrix_df[condition_name], downcast='float')
         self.wiggle_matrix_df.drop("score", axis=1, inplace=True)
         self.wiggle_matrix_df.drop("variableStep_chrom", axis=1, inplace=True)
         self.wiggle_matrix_df[condition_name] = self.wiggle_matrix_df[condition_name].fillna(0.0)

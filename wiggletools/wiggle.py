@@ -64,6 +64,8 @@ class Wiggle:
                     self.wiggle_df = self.wiggle_df.append(tmp_df)
             self.wiggle_df["score"] = self.wiggle_df["score"].fillna(0.0)
             self.wiggle_df.reset_index(drop=True, inplace=True)
+            self.wiggle_df["location"] = pd.to_numeric(self.wiggle_df["location"], downcast='integer')
+            self.wiggle_df["score"] = pd.to_numeric(self.wiggle_df["score"], downcast='float')
             # Logging
             wiggle_seqid = self.wiggle_df["variableStep_chrom"].unique().tolist()
             condition_name = self.wiggle_df["track_name"].unique().tolist()

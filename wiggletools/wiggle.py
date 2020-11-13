@@ -7,7 +7,7 @@ from io import StringIO
 
 
 class Wiggle:
-    def __init__(self, file_path, chrom_sizes):
+    def __init__(self, file_path, chrom_sizes, is_len_extended):
         self.file_path = file_path
         self.chrom_sizes = chrom_sizes
         self.wiggle_df_columns = ["track_type", "track_name", "variableStep_chrom",
@@ -15,6 +15,7 @@ class Wiggle:
         self.wiggle_df = pd.DataFrame(columns=self.wiggle_df_columns)
         self.wiggle_df["location"] = self.wiggle_df["location"].astype(int)
         self.orientation = None
+        self.parse(is_len_extended)
 
     def parse(self, is_len_extended=False):
         current_wiggle_meta = {}
@@ -24,10 +25,6 @@ class Wiggle:
             file_header, all_contents = self._parse_wiggle_str(raw_file.read())
             current_wiggle_meta = self.parse_wiggle_header(file_header, current_wiggle_meta)
             for content_header, content in all_contents.items():
-                if "-" in content:
-                    self.orientation = "r"
-                else:
-                    self.orientation = "f"
                 current_wiggle_meta = self.parse_wiggle_header(content_header, current_wiggle_meta)
                 tmp_df = pd.read_csv(StringIO(content), sep=" ", names=["location", "score_new"],
                                      dtype={"location": int, "score": float})
@@ -83,6 +80,12 @@ class Wiggle:
                       f"     └── {s.join(wiggle_seqid)}\n"
                       f"     + Ignored sequence IDs:\n"
                       f"     └── {s.join(ignored_seqid)}")
+        if self.orientation is None:
+            if any(self.wiggle_df["score"] < 0):
+                self.orientation = "r"
+            else:
+                self.orientation = "f"
+
 
     @staticmethod
     def _parse_wiggle_str(in_str):
@@ -112,8 +115,8 @@ class Wiggle:
             current_wiggle_meta["variableStep_span"] = line.split('span=')[-1].replace('\n', '').replace('\"', '')
         return current_wiggle_meta
 
-    def get_wiggle(self, is_len_extended=False):
-        self.parse(is_len_extended=is_len_extended)
+    def get_wiggle(self):
+        #self.parse(is_len_extended=is_len_extended)
         return self.wiggle_df
 
     def write_wiggle(self, out_path, alt_wiggle_df=None):
@@ -140,9 +143,9 @@ class Wiggle:
                                   quoting=csv.QUOTE_NONE, quotechar="'", escapechar="\\").replace("\\", ""))
 
     def to_percentile(self, nth, scope="global", inplace=False):
-        self.parse(is_len_extended=True)
+        #self.parse(is_len_extended=True)
         print(f"==> Transforming to {nth} percentile")
-        ret_df = self.wiggle_df
+        ret_df = self.wiggle_df.copy()
         seqids = ret_df["variableStep_chrom"].unique().tolist()
         for seqid in seqids:
             col = ret_df[ret_df["variableStep_chrom"] == seqid]["score"]
@@ -172,9 +175,12 @@ class Wiggle:
             return ret_df
 
     def to_step_height(self, step_range, step_direction, inplace=False):
-        self.parse(is_len_extended=True)
-        print("==> Transforming to step height")
-        ret_df = self.wiggle_df
+        #self.parse(is_len_extended=True)
+        if step_direction == "start_end":
+            print("==> Transforming to rising step height")
+        else:
+            print("==> Transforming to falling step height")
+        ret_df = self.wiggle_df.copy()
         seqids = ret_df["variableStep_chrom"].unique().tolist()
         for seqid in seqids:
             if self.orientation == "r":
@@ -217,9 +223,9 @@ class Wiggle:
         return df[in_col.name]
 
     def to_log2(self, inplace=False):
-        self.parse(is_len_extended=False)
+        #self.parse(is_len_extended=False)
         print("==> Transforming to Log2")
-        ret_df = self.wiggle_df
+        ret_df = self.wiggle_df.copy()
         if self.orientation == "r":
             ret_df["score"] = np.log2(ret_df["score"].abs().replace([0, 0.0], np.nan)) * -1
         else:
@@ -247,8 +253,8 @@ class Wiggle:
             return ret_df
 
     def arithmethic(self, opt, value, inplace=False):
-        self.parse(is_len_extended=False)
-        ret_df = self.wiggle_df
+        #self.parse(is_len_extended=False)
+        ret_df = self.wiggle_df.copy()
         if opt == "add":
             print(f"==> Adding {value} to coverage")
             #TODO
@@ -279,7 +285,7 @@ class Wiggle:
             return ret_df
 
     def split_wiggle(self, by, output_dir=None):
-        self.parse(is_len_extended=True)
+        #self.parse(is_len_extended=True)
         if by == "seqid":
             print(f"==> Splitting {os.path.basename(self.file_path)} by sequence ID")
             seqid_list = self.wiggle_df["variableStep_chrom"].unique()

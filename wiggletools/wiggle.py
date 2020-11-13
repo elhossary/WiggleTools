@@ -176,10 +176,11 @@ class Wiggle:
 
     def to_step_height(self, step_range, step_direction, inplace=False):
         #self.parse(is_len_extended=True)
+        cond_name = self.wiggle_df.iat[0, 1]
         if step_direction == "start_end":
-            print("==> Transforming to rising step height")
+            print(f"==> Transforming '{cond_name}' to rising step height")
         else:
-            print("==> Transforming to falling step height")
+            print(f"==> Transforming '{cond_name}' to falling step height")
         ret_df = self.wiggle_df.copy()
         seqids = ret_df["variableStep_chrom"].unique().tolist()
         for seqid in seqids:
